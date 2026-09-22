@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 07376a013db968c47ab1e191d4e83961
+ShaderIncludeImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 304784
+  packageName: KHS-heungbokjeon, Gyeongbokgung
+  packageVersion: 1.0
+  assetPath: Assets/HeungbokjeonComplex/Heungbokjeon/Shaders/MI_HBJ_RoofornamentD.hlsl
+  uploadId: 715607

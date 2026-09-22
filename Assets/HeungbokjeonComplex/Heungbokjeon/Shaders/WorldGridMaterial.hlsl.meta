@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: d737f4c3a4323db4795098e587772ee3
+ShaderIncludeImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 304784
+  packageName: KHS-heungbokjeon, Gyeongbokgung
+  packageVersion: 1.0
+  assetPath: Assets/HeungbokjeonComplex/Heungbokjeon/Shaders/WorldGridMaterial.hlsl
+  uploadId: 715607

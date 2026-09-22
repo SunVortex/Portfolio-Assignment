@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 4e6a79d5531e9d8428b23f882f53bcc1
+ShaderIncludeImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 304784
+  packageName: KHS-heungbokjeon, Gyeongbokgung
+  packageVersion: 1.0
+  assetPath: Assets/HeungbokjeonComplex/Heungbokjeon/Shaders/MI_HBJ_Tile.hlsl
+  uploadId: 715607

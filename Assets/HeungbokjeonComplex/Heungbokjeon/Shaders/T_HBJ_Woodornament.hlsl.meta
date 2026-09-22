@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 39e7e93fcc6049a4498a34c335fa9c0b
+ShaderIncludeImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 304784
+  packageName: KHS-heungbokjeon, Gyeongbokgung
+  packageVersion: 1.0
+  assetPath: Assets/HeungbokjeonComplex/Heungbokjeon/Shaders/T_HBJ_Woodornament.hlsl
+  uploadId: 715607

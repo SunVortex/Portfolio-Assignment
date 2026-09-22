@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 4ab3f2a79a2c2ca468d0b794dd8cd196
+ShaderIncludeImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 304784
+  packageName: KHS-heungbokjeon, Gyeongbokgung
+  packageVersion: 1.0
+  assetPath: Assets/HeungbokjeonComplex/Heungbokjeon/Shaders/MI_HBJ_WallC.hlsl
+  uploadId: 715607
