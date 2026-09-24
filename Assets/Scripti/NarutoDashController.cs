@@ -14,19 +14,33 @@ public class NarutoDashController : MonoBehaviour
     [SerializeField] private float rotationSpeed = 10f;
     [SerializeField] private float gravity = -20f;
 
-    [Header("Dash")]
+    [Header("Dash Settings")]
     [SerializeField] private float dashDistance = 7f;
     [SerializeField] private float dashDuration = 0.12f;
     [SerializeField] private float dashCooldown = 0.6f;
 
-    [Header("Dash Detection")]
+    [Header("Dash Visual Effects")]
+    [SerializeField] private ParticleSystem dashWindParticles;
+    [SerializeField] private ParticleSystem footstepDustParticles;
+    [SerializeField] private NarutoDashTrail dashTrail;
+
+    [Header("Dust Customization")]
+    [Tooltip("Time delay between footstep dust puffs while running.")]
+    [SerializeField] private float runDustInterval = 0.25f;
+    [Tooltip("Number of small dust particles per step / dash start.")]
+    [SerializeField] private int dustEmitCount = 2;
+
+    [Header("Dash Detection & Filtering")]
     [SerializeField] private DetectionMode detectionMode = DetectionMode.SphereCast;
     [SerializeField] private float detectionRadius = 0.5f;
-    [SerializeField] private LayerMask dashDetectionLayers = ~0;
+    [Tooltip("Select 'Bushes' and 'BreakableBarrels' layers in the dropdown.")]
+    [SerializeField] private LayerMask dashDetectionLayers;
 
     [Header("References")]
     [SerializeField] private CharacterController characterController;
     [SerializeField] private Animator animator;
+    [SerializeField] private HadesCameraFollow cameraFollow;
+    [SerializeField] private Transform mainCameraTransform;
 
     private bool isDashing;
     private bool canDash = true;
@@ -34,6 +48,7 @@ public class NarutoDashController : MonoBehaviour
     private float dashTimer;
     private float cooldownTimer;
     private float verticalVelocity;
+    private float runDustTimer;
 
     private Vector3 dashDirection;
     private Vector3 dashStartPosition;
@@ -45,6 +60,11 @@ public class NarutoDashController : MonoBehaviour
     {
         characterController = GetComponent<CharacterController>();
         animator = GetComponent<Animator>();
+        cameraFollow = Object.FindFirstObjectByType<HadesCameraFollow>();
+        dashTrail = GetComponent<NarutoDashTrail>();
+
+        if (Camera.main != null)
+            mainCameraTransform = Camera.main.transform;
     }
 
     private void Awake()
@@ -54,6 +74,15 @@ public class NarutoDashController : MonoBehaviour
 
         if (animator == null)
             animator = GetComponent<Animator>();
+
+        if (cameraFollow == null)
+            cameraFollow = Object.FindFirstObjectByType<HadesCameraFollow>();
+
+        if (dashTrail == null)
+            dashTrail = GetComponent<NarutoDashTrail>();
+
+        if (mainCameraTransform == null && Camera.main != null)
+            mainCameraTransform = Camera.main.transform;
     }
 
     private void Update()
@@ -69,32 +98,40 @@ public class NarutoDashController : MonoBehaviour
         HandleDashInput();
     }
 
-    // ============================================================
-    // NORMAL MOVEMENT
-    // ============================================================
-
     private void HandleNormalMovement()
     {
         float horizontal = Input.GetAxisRaw("Horizontal");
         float vertical = Input.GetAxisRaw("Vertical");
 
-        // Hades-style movement direction
-        Vector3 moveDirection = new Vector3(horizontal, 0f, vertical);
+        Vector3 rawInput = new Vector3(horizontal, 0f, vertical);
 
-        // Prevent diagonal movement from being faster
-        if (moveDirection.sqrMagnitude > 1f)
+        if (rawInput.sqrMagnitude > 1f)
+            rawInput.Normalize();
+
+        Vector3 moveDirection = Vector3.zero;
+
+        // Camera-Relative Movement Direction
+        if (mainCameraTransform != null)
         {
-            moveDirection.Normalize();
-        }
+            Vector3 camForward = mainCameraTransform.forward;
+            Vector3 camRight = mainCameraTransform.right;
 
-        // -----------------------------------------
-        // ROTATE CHARACTER TOWARD MOVEMENT
-        // -----------------------------------------
+            camForward.y = 0f;
+            camRight.y = 0f;
+
+            camForward.Normalize();
+            camRight.Normalize();
+
+            moveDirection = (camForward * rawInput.z) + (camRight * rawInput.x);
+        }
+        else
+        {
+            moveDirection = rawInput;
+        }
 
         if (moveDirection.sqrMagnitude > 0.01f)
         {
-            Quaternion targetRotation =
-                Quaternion.LookRotation(moveDirection, Vector3.up);
+            Quaternion targetRotation = Quaternion.LookRotation(moveDirection, Vector3.up);
 
             transform.rotation = Quaternion.Slerp(
                 transform.rotation,
@@ -103,51 +140,61 @@ public class NarutoDashController : MonoBehaviour
             );
         }
 
-        // -----------------------------------------
-        // ACTUAL MOVEMENT
-        // -----------------------------------------
-
         Vector3 velocity = moveDirection * moveSpeed;
 
-        // Gravity
         if (characterController.isGrounded && verticalVelocity < 0f)
-        {
             verticalVelocity = -2f;
-        }
 
         verticalVelocity += gravity * Time.deltaTime;
-
         velocity.y = verticalVelocity;
 
         characterController.Move(velocity * Time.deltaTime);
 
-        // -----------------------------------------
-        // ANIMATION
-        // -----------------------------------------
-
-        float movementAmount = moveDirection.magnitude;
-
+        float movementAmount = rawInput.magnitude;
         animator.SetFloat("Speed", movementAmount);
+
+        // Footstep dust timing
+        HandleStepDust(movementAmount > 0.1f && characterController.isGrounded);
     }
 
-    // ============================================================
-    // DASH INPUT
-    // ============================================================
+    private void HandleStepDust(bool isMoving)
+    {
+        if (footstepDustParticles == null)
+            return;
+
+        if (isMoving)
+        {
+            runDustTimer += Time.deltaTime;
+            if (runDustTimer >= runDustInterval)
+            {
+                runDustTimer = 0f;
+                EmitDustPuff();
+            }
+        }
+        else
+        {
+            runDustTimer = runDustInterval;
+        }
+    }
+
+    private void EmitDustPuff()
+    {
+        if (footstepDustParticles != null)
+        {
+            footstepDustParticles.Emit(dustEmitCount);
+        }
+    }
 
     private void HandleDashInput()
     {
         if (!canDash)
             return;
 
-        if(Input.GetKeyDown(KeyCode.Space))
+        if (Input.GetKeyDown(KeyCode.Space))
         {
             StartDash();
         }
     }
-
-    // ============================================================
-    // START DASH
-    // ============================================================
 
     private void StartDash()
     {
@@ -159,23 +206,32 @@ public class NarutoDashController : MonoBehaviour
 
         detectedColliders.Clear();
 
-        // Capture starting position
         dashStartPosition = transform.position;
-
-        // Direction vector
         dashDirection = transform.forward.normalized;
 
-        // Displacement
         Vector3 dashDisplacement = dashDirection * dashDistance;
-
-        // Destination
         dashEndPosition = dashStartPosition + dashDisplacement;
 
-        // Start animation
         animator.ResetTrigger("DashEnd");
         animator.SetTrigger("Dash");
 
-        // Check the ENTIRE dash path before moving
+        if (dashWindParticles != null)
+        {
+            dashWindParticles.Play();
+        }
+
+        EmitDustPuff();
+
+        if (dashTrail != null)
+        {
+            dashTrail.ShowTrail(dashDuration);
+        }
+
+        if (cameraFollow != null)
+        {
+            cameraFollow.SetDashZoom(true);
+        }
+
         DetectDashPath();
 
         Debug.DrawLine(
@@ -186,10 +242,6 @@ public class NarutoDashController : MonoBehaviour
         );
     }
 
-    // ============================================================
-    // DASH UPDATE
-    // ============================================================
-
     private void UpdateDash()
     {
         dashTimer += Time.deltaTime;
@@ -197,11 +249,8 @@ public class NarutoDashController : MonoBehaviour
         float normalizedTime = dashTimer / dashDuration;
 
         if (normalizedTime >= 1f)
-        {
             normalizedTime = 1f;
-        }
 
-        // Smooth interpolation from start to end.
         Vector3 targetPosition = Vector3.Lerp(
             dashStartPosition,
             dashEndPosition,
@@ -213,28 +262,20 @@ public class NarutoDashController : MonoBehaviour
 
         characterController.Move(displacementThisFrame);
 
-        // Dash complete
         if (normalizedTime >= 1f)
-        {
             FinishDash();
-        }
     }
-
-    // ============================================================
-    // DASH END
-    // ============================================================
 
     private void FinishDash()
     {
         isDashing = false;
-
-        // Trigger Dash_Cut2
         animator.SetTrigger("DashEnd");
-    }
 
-    // ============================================================
-    // COOLDOWN
-    // ============================================================
+        if (cameraFollow != null)
+        {
+            cameraFollow.SetDashZoom(false);
+        }
+    }
 
     private void UpdateCooldown()
     {
@@ -250,14 +291,9 @@ public class NarutoDashController : MonoBehaviour
         }
     }
 
-    // ============================================================
-    // DASH PATH DETECTION
-    // ============================================================
-
     private void DetectDashPath()
     {
         Vector3 origin = dashStartPosition + Vector3.up * detectionRadius;
-
         float distance = dashDistance;
 
         if (detectionMode == DetectionMode.Raycast)
@@ -267,13 +303,11 @@ public class NarutoDashController : MonoBehaviour
                 dashDirection,
                 distance,
                 dashDetectionLayers,
-                QueryTriggerInteraction.Ignore
+                QueryTriggerInteraction.Collide
             );
 
             foreach (RaycastHit hit in hits)
-            {
                 RegisterDetectedCollider(hit.collider);
-            }
         }
         else
         {
@@ -283,19 +317,13 @@ public class NarutoDashController : MonoBehaviour
                 dashDirection,
                 distance,
                 dashDetectionLayers,
-                QueryTriggerInteraction.Ignore
+                QueryTriggerInteraction.Collide
             );
 
             foreach (RaycastHit hit in hits)
-            {
                 RegisterDetectedCollider(hit.collider);
-            }
         }
     }
-
-    // ============================================================
-    // REGISTER DETECTED OBJECT
-    // ============================================================
 
     private void RegisterDetectedCollider(Collider detectedCollider)
     {
@@ -307,16 +335,13 @@ public class NarutoDashController : MonoBehaviour
 
         if (detectedColliders.Add(detectedCollider))
         {
-            Debug.Log(
-                "Dash detected: " +
-                detectedCollider.gameObject.name
-            );
+            BreakableObject breakable = detectedCollider.GetComponent<BreakableObject>();
+            if (breakable != null)
+            {
+                breakable.Break();
+            }
         }
     }
-
-    // ============================================================
-    // DEBUG GIZMOS
-    // ============================================================
 
     private void OnDrawGizmosSelected()
     {
@@ -328,18 +353,18 @@ public class NarutoDashController : MonoBehaviour
             Gizmos.color = Color.yellow;
 
             Gizmos.DrawWireSphere(
-                dashStartPosition,
+                dashStartPosition + Vector3.up * detectionRadius,
                 detectionRadius
             );
 
             Gizmos.DrawWireSphere(
-                dashEndPosition,
+                dashEndPosition + Vector3.up * detectionRadius,
                 detectionRadius
             );
 
             Gizmos.DrawLine(
-                dashStartPosition,
-                dashEndPosition
+                dashStartPosition + Vector3.up * detectionRadius,
+                dashEndPosition + Vector3.up * detectionRadius
             );
         }
     }
