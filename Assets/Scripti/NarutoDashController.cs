@@ -232,6 +232,7 @@ public class NarutoDashController : MonoBehaviour
             cameraFollow.SetDashZoom(true);
         }
 
+        // Scan path ahead and break objects before character movement begins
         DetectDashPath();
 
         Debug.DrawLine(
@@ -259,6 +260,9 @@ public class NarutoDashController : MonoBehaviour
 
         Vector3 displacementThisFrame =
             targetPosition - transform.position;
+
+        // Keep vertical movement flat during horizontal dash
+        displacementThisFrame.y = 0f;
 
         characterController.Move(displacementThisFrame);
 
@@ -335,6 +339,9 @@ public class NarutoDashController : MonoBehaviour
 
         if (detectedColliders.Add(detectedCollider))
         {
+            // Immediately disable collider so CharacterController cannot step on top of it
+            detectedCollider.enabled = false;
+
             BreakableObject breakable = detectedCollider.GetComponent<BreakableObject>();
             if (breakable != null)
             {
