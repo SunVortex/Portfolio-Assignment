@@ -3,14 +3,19 @@ using UnityEngine.UI;
 
 public class DashCooldownUI : MonoBehaviour
 {
-    [Header("UI")]
+    [Header("UI Reference")]
     [SerializeField] private Image cooldownImage;
 
-    [Header("Cooldown")]
+    [Header("Cooldown Settings")]
     [SerializeField] private float cooldownTime = 0.6f;
+
+    [Header("Visual Feedback Colors")]
+    [SerializeField] private Color normalColor = Color.white;
+    [SerializeField] private Color wallBlockedColor = new Color(0.35f, 0.35f, 0.35f, 0.6f); // Shaded out grey
 
     private float cooldownTimer;
     private bool isCoolingDown;
+    private bool isBlockedByWall;
 
     private void Start()
     {
@@ -19,12 +24,6 @@ public class DashCooldownUI : MonoBehaviour
 
     private void Update()
     {
-        // TEMPORARY TEST
-        if (Input.GetKeyDown(KeyCode.Space))
-        {
-            StartCooldown();
-        }
-
         if (!isCoolingDown)
             return;
 
@@ -32,7 +31,10 @@ public class DashCooldownUI : MonoBehaviour
 
         float progress = 1f - (cooldownTimer / cooldownTime);
 
-        cooldownImage.fillAmount = Mathf.Clamp01(progress);
+        if (cooldownImage != null)
+        {
+            cooldownImage.fillAmount = Mathf.Clamp01(progress);
+        }
 
         if (cooldownTimer <= 0f)
         {
@@ -40,12 +42,31 @@ public class DashCooldownUI : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Call this from NarutoDashController to trigger the radial cooldown animation.
+    /// </summary>
     public void StartCooldown()
     {
         cooldownTimer = cooldownTime;
         isCoolingDown = true;
 
-        cooldownImage.fillAmount = 0f;
+        if (cooldownImage != null)
+        {
+            cooldownImage.fillAmount = 0f;
+        }
+    }
+
+    /// <summary>
+    /// Call this from NarutoDashController to shade out the icon when touching a boundary wall.
+    /// </summary>
+    public void SetWallBlockedState(bool blocked)
+    {
+        isBlockedByWall = blocked;
+
+        if (cooldownImage != null)
+        {
+            cooldownImage.color = isBlockedByWall ? wallBlockedColor : normalColor;
+        }
     }
 
     private void SetReady()
@@ -53,6 +74,10 @@ public class DashCooldownUI : MonoBehaviour
         cooldownTimer = 0f;
         isCoolingDown = false;
 
-        cooldownImage.fillAmount = 1f;
+        if (cooldownImage != null)
+        {
+            cooldownImage.fillAmount = 1f;
+            cooldownImage.color = isBlockedByWall ? wallBlockedColor : normalColor;
+        }
     }
 }

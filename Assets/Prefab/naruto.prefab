@@ -48,7 +48,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &2169907829340671352
 Transform:
   m_ObjectHideFlags: 0
@@ -5170,13 +5170,19 @@ MonoBehaviour:
   dashDistance: 4
   dashDuration: 0.12
   dashCooldown: 0.6
+  solidObstacleLayers:
+    serializedVersion: 2
+    m_Bits: 129
+  minDashWallDistance: 0.6
+  wallStoppingOffset: 0.4
   dashWindParticles: {fileID: 3529263059083284682}
   footstepDustParticles: {fileID: 4025249221076272296}
   dashTrail: {fileID: 8137080941636742356}
+  dashUI: {fileID: 0}
   runDustInterval: 0.25
   dustEmitCount: 2
   detectionMode: 1
-  detectionRadius: 0.5
+  detectionRadius: 2
   dashDetectionLayers:
     serializedVersion: 2
     m_Bits: 4294967295

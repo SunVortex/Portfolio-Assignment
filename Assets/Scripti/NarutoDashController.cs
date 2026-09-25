@@ -19,10 +19,21 @@ public class NarutoDashController : MonoBehaviour
     [SerializeField] private float dashDuration = 0.12f;
     [SerializeField] private float dashCooldown = 0.6f;
 
+    [Header("Obstacle & Boundary Collision")]
+    [Tooltip("Select solid layers (e.g. Default, Environment, Obstacles) that Naruto CANNOT dash through.")]
+    [SerializeField] private LayerMask solidObstacleLayers = 1;
+    [Tooltip("Minimum distance to a wall required to trigger a dash.")]
+    [SerializeField] private float minDashWallDistance = 0.6f;
+    [Tooltip("Safety offset distance to stop before hitting a solid wall.")]
+    [SerializeField] private float wallStoppingOffset = 0.4f;
+
     [Header("Dash Visual Effects")]
     [SerializeField] private ParticleSystem dashWindParticles;
     [SerializeField] private ParticleSystem footstepDustParticles;
     [SerializeField] private NarutoDashTrail dashTrail;
+
+    [Header("UI References")]
+    [SerializeField] private DashCooldownUI dashUI;
 
     [Header("Dust Customization")]
     [Tooltip("Time delay between footstep dust puffs while running.")]
@@ -30,10 +41,10 @@ public class NarutoDashController : MonoBehaviour
     [Tooltip("Number of small dust particles per step / dash start.")]
     [SerializeField] private int dustEmitCount = 2;
 
-    [Header("Dash Detection & Filtering")]
+    [Header("Dash Detection & Filtering (Breakables)")]
     [SerializeField] private DetectionMode detectionMode = DetectionMode.SphereCast;
     [SerializeField] private float detectionRadius = 0.5f;
-    [Tooltip("Select 'Bushes' and 'BreakableBarrels' layers in the dropdown.")]
+    [Tooltip("Select ONLY breakable layers ('Bushes', 'BreakableBarrels') here.")]
     [SerializeField] private LayerMask dashDetectionLayers;
 
     [Header("References")]
@@ -44,6 +55,7 @@ public class NarutoDashController : MonoBehaviour
 
     private bool isDashing;
     private bool canDash = true;
+    private bool isTouchingWall;
 
     private float dashTimer;
     private float cooldownTimer;
@@ -62,6 +74,7 @@ public class NarutoDashController : MonoBehaviour
         animator = GetComponent<Animator>();
         cameraFollow = Object.FindFirstObjectByType<HadesCameraFollow>();
         dashTrail = GetComponent<NarutoDashTrail>();
+        dashUI = Object.FindFirstObjectByType<DashCooldownUI>();
 
         if (Camera.main != null)
             mainCameraTransform = Camera.main.transform;
@@ -81,12 +94,17 @@ public class NarutoDashController : MonoBehaviour
         if (dashTrail == null)
             dashTrail = GetComponent<NarutoDashTrail>();
 
+        if (dashUI == null)
+            dashUI = Object.FindFirstObjectByType<DashCooldownUI>();
+
         if (mainCameraTransform == null && Camera.main != null)
             mainCameraTransform = Camera.main.transform;
     }
 
     private void Update()
     {
+        CheckWallProximity();
+
         if (isDashing)
         {
             UpdateDash();
@@ -96,6 +114,28 @@ public class NarutoDashController : MonoBehaviour
         UpdateCooldown();
         HandleNormalMovement();
         HandleDashInput();
+    }
+
+    private void CheckWallProximity()
+    {
+        Vector3 rayOrigin = transform.position + Vector3.up * 0.5f;
+        Vector3 checkDirection = transform.forward;
+
+        // Check if Naruto is facing a boundary wall within minimum required dash distance
+        if (Physics.Raycast(rayOrigin, checkDirection, out RaycastHit wallHit, minDashWallDistance, solidObstacleLayers, QueryTriggerInteraction.Ignore))
+        {
+            isTouchingWall = true;
+        }
+        else
+        {
+            isTouchingWall = false;
+        }
+
+        // Shade out UI icon if touching boundary wall
+        if (dashUI != null)
+        {
+            dashUI.SetWallBlockedState(isTouchingWall);
+        }
     }
 
     private void HandleNormalMovement()
@@ -110,7 +150,6 @@ public class NarutoDashController : MonoBehaviour
 
         Vector3 moveDirection = Vector3.zero;
 
-        // Camera-Relative Movement Direction
         if (mainCameraTransform != null)
         {
             Vector3 camForward = mainCameraTransform.forward;
@@ -153,7 +192,6 @@ public class NarutoDashController : MonoBehaviour
         float movementAmount = rawInput.magnitude;
         animator.SetFloat("Speed", movementAmount);
 
-        // Footstep dust timing
         HandleStepDust(movementAmount > 0.1f && characterController.isGrounded);
     }
 
@@ -187,7 +225,7 @@ public class NarutoDashController : MonoBehaviour
 
     private void HandleDashInput()
     {
-        if (!canDash)
+        if (!canDash || isTouchingWall)
             return;
 
         if (Input.GetKeyDown(KeyCode.Space))
@@ -209,11 +247,25 @@ public class NarutoDashController : MonoBehaviour
         dashStartPosition = transform.position;
         dashDirection = transform.forward.normalized;
 
-        Vector3 dashDisplacement = dashDirection * dashDistance;
+        float actualDashDistance = dashDistance;
+
+        Vector3 rayOrigin = dashStartPosition + Vector3.up * 0.5f;
+        if (Physics.Raycast(rayOrigin, dashDirection, out RaycastHit wallHit, dashDistance, solidObstacleLayers, QueryTriggerInteraction.Ignore))
+        {
+            actualDashDistance = Mathf.Max(0f, wallHit.distance - wallStoppingOffset);
+        }
+
+        Vector3 dashDisplacement = dashDirection * actualDashDistance;
         dashEndPosition = dashStartPosition + dashDisplacement;
 
         animator.ResetTrigger("DashEnd");
         animator.SetTrigger("Dash");
+
+        // Trigger radial cooldown animation on UI
+        if (dashUI != null)
+        {
+            dashUI.StartCooldown();
+        }
 
         if (dashWindParticles != null)
         {
@@ -232,7 +284,6 @@ public class NarutoDashController : MonoBehaviour
             cameraFollow.SetDashZoom(true);
         }
 
-        // Scan path ahead and break objects before character movement begins
         DetectDashPath();
 
         Debug.DrawLine(
@@ -261,7 +312,6 @@ public class NarutoDashController : MonoBehaviour
         Vector3 displacementThisFrame =
             targetPosition - transform.position;
 
-        // Keep vertical movement flat during horizontal dash
         displacementThisFrame.y = 0f;
 
         characterController.Move(displacementThisFrame);
@@ -274,6 +324,11 @@ public class NarutoDashController : MonoBehaviour
     {
         isDashing = false;
         animator.SetTrigger("DashEnd");
+
+        if (dashTrail != null)
+        {
+            dashTrail.StopTrail();
+        }
 
         if (cameraFollow != null)
         {
@@ -298,7 +353,7 @@ public class NarutoDashController : MonoBehaviour
     private void DetectDashPath()
     {
         Vector3 origin = dashStartPosition + Vector3.up * detectionRadius;
-        float distance = dashDistance;
+        float distance = Vector3.Distance(dashStartPosition, dashEndPosition);
 
         if (detectionMode == DetectionMode.Raycast)
         {
@@ -339,12 +394,10 @@ public class NarutoDashController : MonoBehaviour
 
         if (detectedColliders.Add(detectedCollider))
         {
-            // Immediately disable collider so CharacterController cannot step on top of it
-            detectedCollider.enabled = false;
-
             BreakableObject breakable = detectedCollider.GetComponent<BreakableObject>();
             if (breakable != null)
             {
+                detectedCollider.enabled = false;
                 breakable.Break();
             }
         }

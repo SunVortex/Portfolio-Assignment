@@ -4,9 +4,9 @@ using UnityEngine;
 public class NarutoDashTrail : MonoBehaviour
 {
     [Header("Trail Density & Timing")]
-    [Tooltip("Very small delay for high density overlapping mesh snapshots.")]
+    [Tooltip("Small delay between ghost mesh snapshot spawns.")]
     [SerializeField] private float meshRefreshRate = 0.012f;
-    [Tooltip("How long each ghost stays visible.")]
+    [Tooltip("How long each ghost stays visible before destroying.")]
     [SerializeField] private float meshDestroyDelay = 0.35f;
 
     [Header("Material Override")]
@@ -26,60 +26,77 @@ public class NarutoDashTrail : MonoBehaviour
         skinnedMeshRenderers = GetComponentsInChildren<SkinnedMeshRenderer>();
     }
 
-    public void ShowTrail(float duration)
+    public void ShowTrail(float maxDuration)
     {
         if (activeTrailCoroutine != null)
         {
             StopCoroutine(activeTrailCoroutine);
         }
 
-        activeTrailCoroutine = StartCoroutine(ActivateTrailRoutine(duration));
+        activeTrailCoroutine = StartCoroutine(ActivateTrailRoutine(maxDuration));
     }
 
-    private IEnumerator ActivateTrailRoutine(float duration)
+    public void StopTrail()
+    {
+        if (activeTrailCoroutine != null)
+        {
+            StopCoroutine(activeTrailCoroutine);
+            activeTrailCoroutine = null;
+        }
+    }
+
+    private IEnumerator ActivateTrailRoutine(float maxDuration)
     {
         float timer = 0f;
+        Vector3 lastPosition = transform.position;
 
-        while (timer < duration)
+        while (timer < maxDuration)
         {
-            for (int i = 0; i < skinnedMeshRenderers.Length; i++)
+            // Only spawn trail if character has actually moved since last frame
+            float movedDistance = Vector3.Distance(transform.position, lastPosition);
+            if (movedDistance > 0.05f)
             {
-                if (skinnedMeshRenderers[i] == null || !skinnedMeshRenderers[i].enabled)
-                    continue;
+                lastPosition = transform.position;
 
-                // Create ghost container
-                GameObject ghostObj = new GameObject("DashGhost");
-                ghostObj.transform.SetPositionAndRotation(
-                    skinnedMeshRenderers[i].transform.position,
-                    skinnedMeshRenderers[i].transform.rotation
-                );
-                ghostObj.transform.localScale = skinnedMeshRenderers[i].transform.lossyScale;
-
-                // Attach components
-                MeshRenderer mr = ghostObj.AddComponent<MeshRenderer>();
-                MeshFilter mf = ghostObj.AddComponent<MeshFilter>();
-
-                // Disable shadow casting/receiving on ghosts
-                mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                mr.receiveShadows = false;
-
-                // Bake mesh pose
-                Mesh bakedMesh = new Mesh();
-                skinnedMeshRenderers[i].BakeMesh(bakedMesh);
-                mf.mesh = bakedMesh;
-
-                // Assign Material instance
-                if (trailMaterial != null)
+                for (int i = 0; i < skinnedMeshRenderers.Length; i++)
                 {
-                    Material instancedMat = new Material(trailMaterial);
-                    mr.material = instancedMat;
+                    if (skinnedMeshRenderers[i] == null || !skinnedMeshRenderers[i].enabled)
+                        continue;
 
-                    // Fade out ghost smoothly
-                    StartCoroutine(FadeAndDestroy(ghostObj, instancedMat));
-                }
-                else
-                {
-                    Destroy(ghostObj);
+                    // Create ghost container
+                    GameObject ghostObj = new GameObject("DashGhost");
+                    ghostObj.transform.SetPositionAndRotation(
+                        skinnedMeshRenderers[i].transform.position,
+                        skinnedMeshRenderers[i].transform.rotation
+                    );
+                    ghostObj.transform.localScale = skinnedMeshRenderers[i].transform.lossyScale;
+
+                    // Attach Mesh Filter & Renderer
+                    MeshRenderer mr = ghostObj.AddComponent<MeshRenderer>();
+                    MeshFilter mf = ghostObj.AddComponent<MeshFilter>();
+
+                    // Disable shadow casting on ghosts
+                    mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                    mr.receiveShadows = false;
+
+                    // Bake snapshot of pose
+                    Mesh bakedMesh = new Mesh();
+                    skinnedMeshRenderers[i].BakeMesh(bakedMesh);
+                    mf.mesh = bakedMesh;
+
+                    // Assign Material instance
+                    if (trailMaterial != null)
+                    {
+                        Material instancedMat = new Material(trailMaterial);
+                        mr.material = instancedMat;
+
+                        // Fade out ghost smoothly
+                        StartCoroutine(FadeAndDestroy(ghostObj, instancedMat));
+                    }
+                    else
+                    {
+                        Destroy(ghostObj);
+                    }
                 }
             }
 
