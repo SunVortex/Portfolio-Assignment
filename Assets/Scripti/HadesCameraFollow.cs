@@ -2,88 +2,72 @@ using UnityEngine;
 
 public class HadesCameraFollow : MonoBehaviour
 {
-    [Header("Target")]
+    [Header("Target & Position")]
     [SerializeField] private Transform target;
+    [SerializeField] private Vector3 defaultOffset = new Vector3(0f, 10f, -8f);
+    [SerializeField] private float followSpeed = 10f;
 
-    [Header("Camera Offset")]
-    [SerializeField] private Vector3 offset = new Vector3(8f, 10f, -8f);
-
-    [Header("Fixed Camera Rotation")]
-    [Tooltip("Enable to lock camera rotation completely.")]
-    [SerializeField] private bool lockRotation = true;
-    [Tooltip("Fixed Euler angles for camera rotation (X, Y, Z). Set Y to 45.")]
-    [SerializeField] private Vector3 fixedRotation = new Vector3(45f, 45f, 0f);
-
-    [Header("Follow Settings")]
-    [SerializeField] private float followSmoothness = 8f;
+    [Header("Scroll Zoom Settings")]
+    [Tooltip("How much scrolling affects zoom distance.")]
+    [SerializeField] private float scrollSensitivity = 5f;
+    [Tooltip("Maximum allowed temporary zoom-in (offset multiplier).")]
+    [SerializeField] private float maxZoomIn = 0.5f;
+    [Tooltip("Maximum allowed temporary zoom-out (offset multiplier).")]
+    [SerializeField] private float maxZoomOut = 1.8f;
+    [Tooltip("Speed at which the camera snaps back to default after releasing scroll.")]
+    [SerializeField] private float returnSpeed = 3f;
 
     [Header("Dash Zoom Settings")]
-    [Tooltip("Target FOV or size during dash.")]
-    [SerializeField] private float dashZoomFOV = 65f;
-    [SerializeField] private float zoomInSpeed = 10f;
-    [SerializeField] private float zoomOutSpeed = 5f;
+    [SerializeField] private float dashZoomMultiplier = 1.2f;
+    [SerializeField] private float dashZoomSpeed = 12f;
 
-    private Camera cam;
-    private float defaultFOV;
-    private bool isZooming;
-
-    private void Awake()
-    {
-        cam = GetComponent<Camera>();
-        if (cam != null)
-        {
-            defaultFOV = cam.orthographic ? cam.orthographicSize : cam.fieldOfView;
-        }
-    }
+    private float currentZoomOffset = 1f;
+    private bool isDashing;
 
     private void LateUpdate()
     {
-        if (target == null)
-            return;
+        if (target == null) return;
 
-        // Position Follow (smooth transition to target + offset)
-        Vector3 targetPosition = target.position + offset;
+        HandleScrollZoomInput();
+        UpdateCameraPosition();
+    }
 
-        transform.position = Vector3.Lerp(
-            transform.position,
-            targetPosition,
-            followSmoothness * Time.deltaTime
-        );
+    private void HandleScrollZoomInput()
+    {
+        float scrollInput = Input.GetAxis("Mouse ScrollWheel");
 
-        // Rotation Control (Fixed rotation instead of LookAt)
-        if (lockRotation)
+        if (Mathf.Abs(scrollInput) > 0.01f)
         {
-            transform.rotation = Quaternion.Euler(fixedRotation);
+            // Zoom in/out based on wheel direction
+            currentZoomOffset -= scrollInput * scrollSensitivity;
+            currentZoomOffset = Mathf.Clamp(currentZoomOffset, maxZoomIn, maxZoomOut);
         }
         else
         {
-            transform.LookAt(target);
-        }
-
-        // Dynamic Zoom Logic
-        HandleZoom();
-    }
-
-    private void HandleZoom()
-    {
-        if (cam == null)
-            return;
-
-        float targetFOV = isZooming ? dashZoomFOV : defaultFOV;
-        float currentSpeed = isZooming ? zoomInSpeed : zoomOutSpeed;
-
-        if (cam.orthographic)
-        {
-            cam.orthographicSize = Mathf.Lerp(cam.orthographicSize, targetFOV, currentSpeed * Time.deltaTime);
-        }
-        else
-        {
-            cam.fieldOfView = Mathf.Lerp(cam.fieldOfView, targetFOV, currentSpeed * Time.deltaTime);
+            // Smoothly spring back to default position (multiplier = 1) when scroll wheel is idle
+            currentZoomOffset = Mathf.Lerp(currentZoomOffset, 1f, Time.deltaTime * returnSpeed);
         }
     }
 
-    public void SetDashZoom(bool active)
+    private void UpdateCameraPosition()
     {
-        isZooming = active;
+        // Combine base offset with scroll zoom factor and dash zoom factor
+        float targetMultiplier = currentZoomOffset * (isDashing ? dashZoomMultiplier : 1f);
+        Vector3 targetOffset = defaultOffset * targetMultiplier;
+        Vector3 desiredPosition = target.position + targetOffset;
+
+        float activeFollowSpeed = isDashing ? dashZoomSpeed : followSpeed;
+        transform.position = Vector3.Lerp(transform.position, desiredPosition, Time.deltaTime * activeFollowSpeed);
+
+        // Keep camera looking smoothly at character
+        transform.LookAt(target.position + Vector3.up * 1.2f);
+    }
+
+    /// <summary>
+    /// Call this from NarutoDashController to trigger dynamic dash camera widening.
+    /// </summary>
+    public void SetDashZoom(bool dashing)
+    {
+        isDashing = dashing;
     }
 }

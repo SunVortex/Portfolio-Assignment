@@ -5211,7 +5211,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ede2fd8e95f7e9a438e2f69d13a63499, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NarutoDashTrail
-  meshRefreshRate: 0.03
+  meshRefreshRate: 0.015
   meshDestroyDelay: 0.35
   trailMaterial: {fileID: 2100000, guid: 7d5ce75163f23f944a71c5d1c3a474ca, type: 2}
   colorProperty: _Color

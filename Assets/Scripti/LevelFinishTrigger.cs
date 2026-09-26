@@ -21,23 +21,24 @@ public class LevelFinishTrigger : MonoBehaviour
     {
         if (levelFinished) return;
 
+        // Check if player entered end zone
         if (other.CompareTag("Player") || other.GetComponent<NarutoDashController>() != null)
         {
             levelFinished = true;
 
-            // Open victory panel UI
+            // Open Level Complete Panel UI
             if (levelCompletePanel != null)
             {
                 levelCompletePanel.SetActive(true);
             }
 
-            // Play level complete SFX
+            // Play Victory SFX
             if (levelCompleteSFX != null && audioSource != null)
             {
                 audioSource.PlayOneShot(levelCompleteSFX);
             }
 
-            // Pause time
+            // Freeze game time
             Time.timeScale = 0f;
         }
     }
