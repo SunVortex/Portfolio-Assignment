@@ -20,12 +20,17 @@ public class MainMenuManager : MonoBehaviour
 
         // Resume game time
         Time.timeScale = 1f;
+
+        // Start BGM only when entering gameplay
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.StartGameplayBGM();
+        }
     }
 
     public void QuitGame()
     {
         Debug.Log("Quit Game pressed.");
-
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;
 #else

@@ -4922,14 +4922,14 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8512961290310831579}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+  m_LocalRotation: {x: -0.7069834, y: 0, z: 0, w: 0.7072302}
   m_LocalPosition: {x: 0.4607659, y: 0.5000002, z: 4.0637765}
   m_LocalScale: {x: 100, y: 108.967125, z: 100}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1815812599284538687}
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: -89.98, y: 0, z: 0}
 --- !u!33 &2730529498867111278
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -5022,4 +5022,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BreakableObject
   breakParticles: {fileID: 1427733881178841811}
   disableColliderOnBreak: 1
+  breakSFX: {fileID: 8300000, guid: c0b100dd1c2fc9343ae112535ff911d6, type: 3}
+  breakVolumeMultiplier: 5
   extraCleanupDelay: 2

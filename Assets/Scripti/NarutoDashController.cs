@@ -20,11 +20,8 @@ public class NarutoDashController : MonoBehaviour
     [SerializeField] private float dashCooldown = 0.6f;
 
     [Header("Obstacle & Boundary Collision")]
-    [Tooltip("Select solid layers (e.g. Default, Environment, Obstacles) that Naruto CANNOT dash through.")]
     [SerializeField] private LayerMask solidObstacleLayers = 1;
-    [Tooltip("Minimum distance to a wall required to trigger a dash.")]
     [SerializeField] private float minDashWallDistance = 0.6f;
-    [Tooltip("Safety offset distance to stop before hitting a solid wall.")]
     [SerializeField] private float wallStoppingOffset = 0.4f;
 
     [Header("Dash Visual Effects")]
@@ -32,19 +29,28 @@ public class NarutoDashController : MonoBehaviour
     [SerializeField] private ParticleSystem footstepDustParticles;
     [SerializeField] private NarutoDashTrail dashTrail;
 
+    [Header("Audio Settings - Footsteps")]
+    [SerializeField] private AudioSource footstepAudioSource;
+    [SerializeField] private AudioClip leftFootSFX;
+    [SerializeField] private AudioClip rightFootSFX;
+    [SerializeField] private float footstepSFXInterval = 0.28f;
+
+    [Header("Audio Settings - Dash")]
+    [Tooltip("Dedicated AudioSource assigned specifically for Dash SFX.")]
+    [SerializeField] private AudioSource dashAudioSource;
+    [SerializeField] private AudioClip dashSFX;
+    [Range(0.1f, 5f)][SerializeField] private float dashVolumeMultiplier = 1.5f;
+
     [Header("UI References")]
     [SerializeField] private DashCooldownUI dashUI;
 
     [Header("Dust Customization")]
-    [Tooltip("Time delay between footstep dust puffs while running.")]
     [SerializeField] private float runDustInterval = 0.25f;
-    [Tooltip("Number of small dust particles per step / dash start.")]
     [SerializeField] private int dustEmitCount = 2;
 
     [Header("Dash Detection & Filtering (Breakables)")]
     [SerializeField] private DetectionMode detectionMode = DetectionMode.SphereCast;
     [SerializeField] private float detectionRadius = 0.5f;
-    [Tooltip("Select ONLY breakable layers ('Bushes', 'BreakableBarrels') here.")]
     [SerializeField] private LayerMask dashDetectionLayers;
 
     [Header("References")]
@@ -56,11 +62,13 @@ public class NarutoDashController : MonoBehaviour
     private bool isDashing;
     private bool canDash = true;
     private bool isTouchingWall;
+    private bool isLeftFootNext = true;
 
     private float dashTimer;
     private float cooldownTimer;
     private float verticalVelocity;
     private float runDustTimer;
+    private float footstepAudioTimer;
 
     private Vector3 dashDirection;
     private Vector3 dashStartPosition;
@@ -72,6 +80,7 @@ public class NarutoDashController : MonoBehaviour
     {
         characterController = GetComponent<CharacterController>();
         animator = GetComponent<Animator>();
+        footstepAudioSource = GetComponent<AudioSource>();
         cameraFollow = Object.FindFirstObjectByType<HadesCameraFollow>();
         dashTrail = GetComponent<NarutoDashTrail>();
         dashUI = Object.FindFirstObjectByType<DashCooldownUI>();
@@ -87,6 +96,9 @@ public class NarutoDashController : MonoBehaviour
 
         if (animator == null)
             animator = GetComponent<Animator>();
+
+        if (footstepAudioSource == null)
+            footstepAudioSource = GetComponent<AudioSource>();
 
         if (cameraFollow == null)
             cameraFollow = Object.FindFirstObjectByType<HadesCameraFollow>();
@@ -121,7 +133,6 @@ public class NarutoDashController : MonoBehaviour
         Vector3 rayOrigin = transform.position + Vector3.up * 0.5f;
         Vector3 checkDirection = transform.forward;
 
-        // Check if Naruto is facing a boundary wall within minimum required dash distance
         if (Physics.Raycast(rayOrigin, checkDirection, out RaycastHit wallHit, minDashWallDistance, solidObstacleLayers, QueryTriggerInteraction.Ignore))
         {
             isTouchingWall = true;
@@ -131,7 +142,6 @@ public class NarutoDashController : MonoBehaviour
             isTouchingWall = false;
         }
 
-        // Shade out UI icon if touching boundary wall
         if (dashUI != null)
         {
             dashUI.SetWallBlockedState(isTouchingWall);
@@ -192,7 +202,35 @@ public class NarutoDashController : MonoBehaviour
         float movementAmount = rawInput.magnitude;
         animator.SetFloat("Speed", movementAmount);
 
-        HandleStepDust(movementAmount > 0.1f && characterController.isGrounded);
+        bool isMovingGrounded = movementAmount > 0.1f && characterController.isGrounded;
+        HandleStepDust(isMovingGrounded);
+        HandleAlternatingFootsteps(isMovingGrounded);
+    }
+
+    private void HandleAlternatingFootsteps(bool isMoving)
+    {
+        if (footstepAudioSource == null) return;
+
+        if (isMoving)
+        {
+            footstepAudioTimer += Time.deltaTime;
+            if (footstepAudioTimer >= footstepSFXInterval)
+            {
+                footstepAudioTimer = 0f;
+
+                AudioClip clipToPlay = isLeftFootNext ? leftFootSFX : rightFootSFX;
+                if (clipToPlay != null)
+                {
+                    footstepAudioSource.PlayOneShot(clipToPlay);
+                }
+
+                isLeftFootNext = !isLeftFootNext;
+            }
+        }
+        else
+        {
+            footstepAudioTimer = footstepSFXInterval;
+        }
     }
 
     private void HandleStepDust(bool isMoving)
@@ -261,7 +299,12 @@ public class NarutoDashController : MonoBehaviour
         animator.ResetTrigger("DashEnd");
         animator.SetTrigger("Dash");
 
-        // Trigger radial cooldown animation on UI
+        // Play Dash Sound on Dedicated AudioSource
+        if (dashSFX != null && dashAudioSource != null)
+        {
+            dashAudioSource.PlayOneShot(dashSFX, dashVolumeMultiplier);
+        }
+
         if (dashUI != null)
         {
             dashUI.StartCooldown();
@@ -285,13 +328,6 @@ public class NarutoDashController : MonoBehaviour
         }
 
         DetectDashPath();
-
-        Debug.DrawLine(
-            dashStartPosition,
-            dashEndPosition,
-            Color.red,
-            2f
-        );
     }
 
     private void UpdateDash()
@@ -309,9 +345,7 @@ public class NarutoDashController : MonoBehaviour
             normalizedTime
         );
 
-        Vector3 displacementThisFrame =
-            targetPosition - transform.position;
-
+        Vector3 displacementThisFrame = targetPosition - transform.position;
         displacementThisFrame.y = 0f;
 
         characterController.Move(displacementThisFrame);
@@ -386,10 +420,7 @@ public class NarutoDashController : MonoBehaviour
 
     private void RegisterDetectedCollider(Collider detectedCollider)
     {
-        if (detectedCollider == null)
-            return;
-
-        if (detectedCollider.transform == transform)
+        if (detectedCollider == null || detectedCollider.transform == transform)
             return;
 
         if (detectedColliders.Add(detectedCollider))
@@ -400,32 +431,6 @@ public class NarutoDashController : MonoBehaviour
                 detectedCollider.enabled = false;
                 breakable.Break();
             }
-        }
-    }
-
-    private void OnDrawGizmosSelected()
-    {
-        if (!Application.isPlaying)
-            return;
-
-        if (isDashing)
-        {
-            Gizmos.color = Color.yellow;
-
-            Gizmos.DrawWireSphere(
-                dashStartPosition + Vector3.up * detectionRadius,
-                detectionRadius
-            );
-
-            Gizmos.DrawWireSphere(
-                dashEndPosition + Vector3.up * detectionRadius,
-                detectionRadius
-            );
-
-            Gizmos.DrawLine(
-                dashStartPosition + Vector3.up * detectionRadius,
-                dashEndPosition + Vector3.up * detectionRadius
-            );
         }
     }
 }

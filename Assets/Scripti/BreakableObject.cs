@@ -7,8 +7,12 @@ public class BreakableObject : MonoBehaviour
     [SerializeField] private ParticleSystem breakParticles;
     [SerializeField] private bool disableColliderOnBreak = true;
 
+    [Header("Audio Settings")]
+    [SerializeField] private AudioClip breakSFX;
+    [Tooltip("Boost the breaking volume directly in Inspector (1.0 = Normal, 3.0 = 3x louder).")]
+    [Range(0.1f, 5f)][SerializeField] private float breakVolumeMultiplier = 2.5f;
+
     [Header("Cleanup Optimization")]
-    [Tooltip("Extra time after particles land on ground before destroying the particle object.")]
     [SerializeField] private float extraCleanupDelay = 2.0f;
 
     private bool isBroken = false;
@@ -28,6 +32,12 @@ public class BreakableObject : MonoBehaviour
 
         isBroken = true;
 
+        // Play high-volume break audio
+        if (breakSFX != null)
+        {
+            PlayBreakAudio();
+        }
+
         if (breakParticles == null)
         {
             breakParticles = GetComponentInChildren<ParticleSystem>(true);
@@ -35,23 +45,18 @@ public class BreakableObject : MonoBehaviour
 
         if (breakParticles != null)
         {
-            // Instantiate a clean, single-use particle clone at the object's position
             ParticleSystem spawnedParticles = Instantiate(breakParticles, transform.position, transform.rotation);
             spawnedParticles.gameObject.SetActive(true);
 
-            // Ensure looping is strictly disabled programmatically
             var mainModule = spawnedParticles.main;
             mainModule.loop = false;
 
-            // Trigger single explosion/burst
             spawnedParticles.Play();
 
-            // Calculate total lifetime (particle duration + fall lifetime + extra delay on floor)
             float totalLifetime = mainModule.duration + mainModule.startLifetime.constantMax + extraCleanupDelay;
             Destroy(spawnedParticles.gameObject, totalLifetime);
         }
 
-        // Disable collider immediately so player passes through cleanly
         if (disableColliderOnBreak)
         {
             Collider col = GetComponent<Collider>();
@@ -63,7 +68,22 @@ public class BreakableObject : MonoBehaviour
 
         Debug.Log(gameObject.name + " was destroyed on Dash!");
 
-        // Destroy original crate/bush GameObject immediately
         Destroy(gameObject);
+    }
+
+    private void PlayBreakAudio()
+    {
+        // Instantiate temporary AudioSource GameObject so audio survives main object destruction
+        GameObject audioObj = new GameObject("BreakAudioSFX");
+        audioObj.transform.position = transform.position;
+
+        AudioSource tempAudio = audioObj.AddComponent<AudioSource>();
+        tempAudio.clip = breakSFX;
+        tempAudio.volume = breakVolumeMultiplier;
+        tempAudio.spatialBlend = 0.5f; // Blend between 2D and 3D so it stays crisp and loud from overhead camera
+        tempAudio.playOnAwake = false;
+        tempAudio.Play();
+
+        Destroy(audioObj, breakSFX.length + 0.1f);
     }
 }

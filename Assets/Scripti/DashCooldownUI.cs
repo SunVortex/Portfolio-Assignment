@@ -11,15 +11,25 @@ public class DashCooldownUI : MonoBehaviour
 
     [Header("Visual Feedback Colors")]
     [SerializeField] private Color normalColor = Color.white;
-    [SerializeField] private Color wallBlockedColor = new Color(0.35f, 0.35f, 0.35f, 0.6f); // Shaded out grey
+    [SerializeField] private Color wallBlockedColor = new Color(0.35f, 0.35f, 0.35f, 0.6f);
+
+    [Header("Audio")]
+    [SerializeField] private AudioSource audioSource;
+    [SerializeField] private AudioClip cooldownReadySFX;
 
     private float cooldownTimer;
     private bool isCoolingDown;
     private bool isBlockedByWall;
 
+    private void Awake()
+    {
+        if (audioSource == null)
+            audioSource = GetComponent<AudioSource>();
+    }
+
     private void Start()
     {
-        SetReady();
+        SetReady(false); // Don't play sound on level start
     }
 
     private void Update()
@@ -38,13 +48,10 @@ public class DashCooldownUI : MonoBehaviour
 
         if (cooldownTimer <= 0f)
         {
-            SetReady();
+            SetReady(true);
         }
     }
 
-    /// <summary>
-    /// Call this from NarutoDashController to trigger the radial cooldown animation.
-    /// </summary>
     public void StartCooldown()
     {
         cooldownTimer = cooldownTime;
@@ -56,9 +63,6 @@ public class DashCooldownUI : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Call this from NarutoDashController to shade out the icon when touching a boundary wall.
-    /// </summary>
     public void SetWallBlockedState(bool blocked)
     {
         isBlockedByWall = blocked;
@@ -69,7 +73,7 @@ public class DashCooldownUI : MonoBehaviour
         }
     }
 
-    private void SetReady()
+    private void SetReady(bool playSound = true)
     {
         cooldownTimer = 0f;
         isCoolingDown = false;
@@ -78,6 +82,11 @@ public class DashCooldownUI : MonoBehaviour
         {
             cooldownImage.fillAmount = 1f;
             cooldownImage.color = isBlockedByWall ? wallBlockedColor : normalColor;
+        }
+
+        if (playSound && cooldownReadySFX != null && audioSource != null)
+        {
+            audioSource.PlayOneShot(cooldownReadySFX);
         }
     }
 }
