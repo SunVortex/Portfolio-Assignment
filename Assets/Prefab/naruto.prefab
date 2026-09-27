@@ -5188,7 +5188,7 @@ MonoBehaviour:
   dashSFX: {fileID: 8300000, guid: a4f0ef581c5afb94d854653c3b3483ac, type: 3}
   dashVolumeMultiplier: 3.3
   dashUI: {fileID: 0}
-  runDustInterval: 0.25
+  runDustInterval: 1
   dustEmitCount: 2
   detectionMode: 1
   detectionRadius: 0.5

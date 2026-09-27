@@ -27471,6 +27471,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f802751a9562614d8cbea658fc7a62f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LevelCompleteUI
+  embedDepth: 0.2
 --- !u!4 &1878016083 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7621944309398344926, guid: 188fbdf7ed091554c9ee6bcdb956b8aa, type: 3}
@@ -29482,7 +29483,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DashCooldownUI
   cooldownImage: {fileID: 2048221187}
-  cooldownTime: 1
+  cooldownTime: 2
   normalColor: {r: 1, g: 1, b: 1, a: 1}
   wallBlockedColor: {r: 0.35, g: 0.35, b: 0.35, a: 0.6}
   audioSource: {fileID: 2048221189}

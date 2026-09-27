@@ -263,7 +263,8 @@ public class NarutoDashController : MonoBehaviour
 
     private void HandleDashInput()
     {
-        if (!canDash || isTouchingWall)
+        // Block dashing if internal cooldown active, touching a wall, OR UI is still filling up!
+        if (!canDash || isTouchingWall || (dashUI != null && dashUI.IsCoolingDown))
             return;
 
         if (Input.GetKeyDown(KeyCode.Space))

@@ -21,6 +21,11 @@ public class DashCooldownUI : MonoBehaviour
     private bool isCoolingDown;
     private bool isBlockedByWall;
 
+    /// <summary>
+    /// Returns true while the cooldown fill animation is still running.
+    /// </summary>
+    public bool IsCoolingDown => isCoolingDown;
+
     private void Awake()
     {
         if (audioSource == null)

@@ -1,26 +1,43 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
-public class LevelCompleteUI : MonoBehaviour
+public class StuckNeedle : MonoBehaviour
 {
-    /// <summary>
-    /// Call this when the Home Button is clicked.
-    /// </summary>
-    public void GoToHomeMenu()
+    [SerializeField] private float embedDepth = 0.2f;
+    private bool isStuck = false;
+
+    private void OnTriggerEnter(Collider other)
     {
-        // Unfreeze time before switching scenes or returning to menu
-        Time.timeScale = 1f;
+        if (isStuck) return;
 
-        // Play Button Click Sound
-        if (AudioManager.Instance != null)
+        // Check if hitting the player or breakable environment
+        if (other.CompareTag("Player") || other.GetComponent<CharacterController>() != null)
         {
-            AudioManager.Instance.PlayUIClick();
+            isStuck = true;
+
+            // Stop physics/movement
+            Rigidbody rb = GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.isKinematic = true;
+                rb.linearVelocity = Vector3.zero;
+            }
+
+            // Disable collider so player doesn't trip on stuck needles
+            Collider col = GetComponent<Collider>();
+            if (col != null) col.enabled = false;
+
+            // Push slightly forward to embed inside character body
+            transform.position += transform.forward * embedDepth;
+
+            // Parent to the exact body part bone hit so needle moves with character animation
+            transform.SetParent(other.transform);
+
+            // Optional: Spawn small blood splash at impact point
+            BreakableObject breakable = other.GetComponent<BreakableObject>();
+            if (breakable != null)
+            {
+                breakable.Break();
+            }
         }
-
-        // Option A: Reload current level scene
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
-
-        // Option B: If you have a separate Menu Scene (uncomment line below and replace "MainMenu"):
-        // SceneManager.LoadScene("MainMenu");
     }
 }
