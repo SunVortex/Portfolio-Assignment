@@ -1,137 +1,140 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class NarutoDashTrail : MonoBehaviour
 {
-    [Header("Trail Density & Timing")]
-    [Tooltip("Small delay between ghost mesh snapshot spawns.")]
-    [SerializeField] private float meshRefreshRate = 0.012f;
-    [Tooltip("How long each ghost stays visible before destroying.")]
-    [SerializeField] private float meshDestroyDelay = 0.35f;
+    [Header("Multi-Mesh Settings")]
+    [Tooltip("Leave empty to automatically grab all sub-mesh parts under this character.")]
+    [SerializeField] private SkinnedMeshRenderer[] playerRenderers;
 
-    [Header("Material Override")]
-    [SerializeField] private Material trailMaterial;
-    [SerializeField] private string colorProperty = "_Color";
+    [Header("Ghost Trail Settings")]
+    [SerializeField] private Material ghostMaterial;
+    [SerializeField] private float ghostSpawnInterval = 0.03f;
+    [SerializeField] private float ghostLifetime = 0.4f;
 
-    [Header("Glow & Fade Settings")]
-    [ColorUsage(true, true)]
-    [SerializeField] private Color glowColor = new Color(2.5f, 0.8f, 0.1f, 0.7f); // HDR Orange/Gold glow
-    [SerializeField] private AnimationCurve fadeCurve = AnimationCurve.EaseInOut(0, 1, 1, 0);
+    [Header("Opacity Gradient (Start Faded -> End Bold)")]
+    [Range(0f, 1f)][SerializeField] private float startOpacity = 0.15f;
+    [Range(0f, 1f)][SerializeField] private float endOpacity = 0.95f;
 
-    private SkinnedMeshRenderer[] skinnedMeshRenderers;
-    private Coroutine activeTrailCoroutine;
+    private bool isSpawningTrail;
 
     private void Awake()
     {
-        skinnedMeshRenderers = GetComponentsInChildren<SkinnedMeshRenderer>();
+        // Auto-find all sub-mesh renderers (baju, celana, kepala, etc.) under Naruto
+        if (playerRenderers == null || playerRenderers.Length == 0)
+        {
+            playerRenderers = GetComponentsInChildren<SkinnedMeshRenderer>();
+        }
     }
 
-    public void ShowTrail(float maxDuration)
+    public void ShowTrail(float dashDuration)
     {
-        if (activeTrailCoroutine != null)
+        if (!isSpawningTrail)
         {
-            StopCoroutine(activeTrailCoroutine);
+            StartCoroutine(SpawnTrailRoutine(dashDuration));
         }
-
-        activeTrailCoroutine = StartCoroutine(ActivateTrailRoutine(maxDuration));
     }
 
     public void StopTrail()
     {
-        if (activeTrailCoroutine != null)
-        {
-            StopCoroutine(activeTrailCoroutine);
-            activeTrailCoroutine = null;
-        }
+        isSpawningTrail = false;
     }
 
-    private IEnumerator ActivateTrailRoutine(float maxDuration)
+    private IEnumerator SpawnTrailRoutine(float dashDuration)
     {
-        float timer = 0f;
-        Vector3 lastPosition = transform.position;
-
-        while (timer < maxDuration)
-        {
-            // Only spawn trail if character has actually moved since last frame
-            float movedDistance = Vector3.Distance(transform.position, lastPosition);
-            if (movedDistance > 0.05f)
-            {
-                lastPosition = transform.position;
-
-                for (int i = 0; i < skinnedMeshRenderers.Length; i++)
-                {
-                    if (skinnedMeshRenderers[i] == null || !skinnedMeshRenderers[i].enabled)
-                        continue;
-
-                    // Create ghost container
-                    GameObject ghostObj = new GameObject("DashGhost");
-                    ghostObj.transform.SetPositionAndRotation(
-                        skinnedMeshRenderers[i].transform.position,
-                        skinnedMeshRenderers[i].transform.rotation
-                    );
-                    ghostObj.transform.localScale = skinnedMeshRenderers[i].transform.lossyScale;
-
-                    // Attach Mesh Filter & Renderer
-                    MeshRenderer mr = ghostObj.AddComponent<MeshRenderer>();
-                    MeshFilter mf = ghostObj.AddComponent<MeshFilter>();
-
-                    // Disable shadow casting on ghosts
-                    mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                    mr.receiveShadows = false;
-
-                    // Bake snapshot of pose
-                    Mesh bakedMesh = new Mesh();
-                    skinnedMeshRenderers[i].BakeMesh(bakedMesh);
-                    mf.mesh = bakedMesh;
-
-                    // Assign Material instance
-                    if (trailMaterial != null)
-                    {
-                        Material instancedMat = new Material(trailMaterial);
-                        mr.material = instancedMat;
-
-                        // Fade out ghost smoothly
-                        StartCoroutine(FadeAndDestroy(ghostObj, instancedMat));
-                    }
-                    else
-                    {
-                        Destroy(ghostObj);
-                    }
-                }
-            }
-
-            timer += meshRefreshRate;
-            yield return new WaitForSeconds(meshRefreshRate);
-        }
-
-        activeTrailCoroutine = null;
-    }
-
-    private IEnumerator FadeAndDestroy(GameObject ghostObject, Material mat)
-    {
+        isSpawningTrail = true;
         float elapsed = 0f;
 
-        while (elapsed < meshDestroyDelay)
+        while (elapsed < dashDuration && isSpawningTrail)
         {
-            elapsed += Time.deltaTime;
-            float normalizedTime = elapsed / meshDestroyDelay;
-            float alphaEvaluated = fadeCurve.Evaluate(normalizedTime);
+            elapsed += ghostSpawnInterval;
 
-            if (mat != null)
+            // Progress from 0 (start of dash) to 1 (end of dash)
+            float dashProgress = Mathf.Clamp01(elapsed / dashDuration);
+
+            // Interpolate opacity so starting clones fade and ending clones remain bold
+            float targetAlpha = Mathf.Lerp(startOpacity, endOpacity, dashProgress);
+
+            SpawnFullGhostClone(targetAlpha);
+
+            yield return new WaitForSeconds(ghostSpawnInterval);
+        }
+
+        isSpawningTrail = false;
+    }
+
+    private void SpawnFullGhostClone(float alpha)
+    {
+        if (playerRenderers == null || playerRenderers.Length == 0)
+            return;
+
+        // Container object for the full ghost clone
+        GameObject fullGhostObj = new GameObject("DashGhostClone_Full");
+
+        // Loop through all body parts (baju, celana, kepala, rambut, tangan, etc.)
+        foreach (SkinnedMeshRenderer smr in playerRenderers)
+        {
+            if (smr == null || !smr.gameObject.activeInHierarchy)
+                continue;
+
+            // Create child mesh instance for each body part
+            GameObject partObj = new GameObject(smr.name + "_Ghost");
+            partObj.transform.SetParent(fullGhostObj.transform);
+            partObj.transform.SetPositionAndRotation(smr.transform.position, smr.transform.rotation);
+            partObj.transform.localScale = smr.transform.lossyScale;
+
+            MeshFilter mf = partObj.AddComponent<MeshFilter>();
+            MeshRenderer mr = partObj.AddComponent<MeshRenderer>();
+
+            Mesh bakedMesh = new Mesh();
+            smr.BakeMesh(bakedMesh);
+            mf.mesh = bakedMesh;
+
+            // Material selection
+            Material baseMat = (ghostMaterial != null) ? ghostMaterial : smr.sharedMaterial;
+            Material matInstance = new Material(baseMat);
+
+            if (matInstance.HasProperty("_Color"))
             {
-                Color currentGlow = glowColor;
-                currentGlow.a *= alphaEvaluated;
+                Color c = matInstance.color;
+                c.a = alpha;
+                matInstance.color = c;
+            }
 
-                if (mat.HasProperty(colorProperty))
-                    mat.SetColor(colorProperty, currentGlow);
+            mr.material = matInstance;
+        }
 
-                if (mat.HasProperty("_EmissionColor"))
-                    mat.SetColor("_EmissionColor", currentGlow);
+        // Smoothly fade out the entire combined clone structure
+        StartCoroutine(FadeAndDestroyGhost(fullGhostObj, alpha));
+    }
+
+    private IEnumerator FadeAndDestroyGhost(GameObject ghostObj, float initialAlpha)
+    {
+        float timer = 0f;
+
+        // Collect all mesh renderers inside the full clone
+        MeshRenderer[] renderers = ghostObj.GetComponentsInChildren<MeshRenderer>();
+
+        while (timer < ghostLifetime)
+        {
+            timer += Time.deltaTime;
+            float fadeProgress = 1f - (timer / ghostLifetime);
+            float currentAlpha = initialAlpha * fadeProgress;
+
+            foreach (MeshRenderer mr in renderers)
+            {
+                if (mr != null && mr.material != null && mr.material.HasProperty("_Color"))
+                {
+                    Color c = mr.material.color;
+                    c.a = currentAlpha;
+                    mr.material.color = c;
+                }
             }
 
             yield return null;
         }
 
-        Destroy(ghostObject);
+        Destroy(ghostObj);
     }
 }

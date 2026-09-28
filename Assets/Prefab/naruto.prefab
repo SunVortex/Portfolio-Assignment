@@ -200,7 +200,7 @@ ParticleSystem:
     startSpeed:
       serializedVersion: 2
       minMaxState: 0
-      scalar: 0.5
+      scalar: 0.78
       minScalar: 5
       maxCurve:
         serializedVersion: 2
@@ -254,7 +254,7 @@ ParticleSystem:
       serializedVersion: 2
       minMaxState: 0
       minColor: {r: 1, g: 1, b: 1, a: 1}
-      maxColor: {r: 0.7372549, g: 0.5647059, b: 0.30980393, a: 1}
+      maxColor: {r: 0.764151, g: 0.62883395, b: 0.4289338, a: 1}
       maxGradient:
         serializedVersion: 2
         key0: {r: 1, g: 1, b: 1, a: 1}
@@ -318,7 +318,7 @@ ParticleSystem:
     startSize:
       serializedVersion: 2
       minMaxState: 0
-      scalar: 0.4
+      scalar: 0.8
       minScalar: 1
       maxCurve:
         serializedVersion: 2
@@ -5188,7 +5188,7 @@ MonoBehaviour:
   dashSFX: {fileID: 8300000, guid: a4f0ef581c5afb94d854653c3b3483ac, type: 3}
   dashVolumeMultiplier: 3.3
   dashUI: {fileID: 0}
-  runDustInterval: 1
+  runDustInterval: 0.4
   dustEmitCount: 2
   detectionMode: 1
   detectionRadius: 0.5
@@ -5211,35 +5211,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ede2fd8e95f7e9a438e2f69d13a63499, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NarutoDashTrail
-  meshRefreshRate: 0.015
-  meshDestroyDelay: 0.35
-  trailMaterial: {fileID: 2100000, guid: 7d5ce75163f23f944a71c5d1c3a474ca, type: 2}
-  colorProperty: _Color
-  glowColor: {r: 2, g: 1.2, b: 0.2, a: 0.8}
-  fadeCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 1
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
+  playerRenderers:
+  - {fileID: 4518212286268709453}
+  - {fileID: 400565315280047149}
+  - {fileID: 9117170907407719290}
+  - {fileID: 5431563539088799517}
+  - {fileID: 6167227373404600370}
+  - {fileID: 6613594459191103080}
+  - {fileID: 5230535738910471}
+  - {fileID: 1176119838734215823}
+  - {fileID: 9182410352307455350}
+  ghostMaterial: {fileID: 2100000, guid: 7d5ce75163f23f944a71c5d1c3a474ca, type: 2}
+  ghostSpawnInterval: 0.02
+  ghostLifetime: 0.7
+  startOpacity: 0
+  endOpacity: 1
 --- !u!82 &1873576600526001858
 AudioSource:
   m_ObjectHideFlags: 0
