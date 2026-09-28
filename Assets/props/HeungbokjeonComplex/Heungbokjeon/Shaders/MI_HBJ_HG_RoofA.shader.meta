@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: abc00000000001163321313847990801
+ShaderImporter:
+  defaultTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 304784
+  packageName: KHS-heungbokjeon, Gyeongbokgung
+  packageVersion: 1.0
+  assetPath: Assets/HeungbokjeonComplex/Heungbokjeon/Shaders/MI_HBJ_HG_RoofA.shader
+  uploadId: 715607

@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: abc00000000017248376571764546862
+ShaderImporter:
+  defaultTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 304784
+  packageName: KHS-heungbokjeon, Gyeongbokgung
+  packageVersion: 1.0
+  assetPath: Assets/HeungbokjeonComplex/Heungbokjeon/Shaders/DefaultMaterial.shader
+  uploadId: 715607

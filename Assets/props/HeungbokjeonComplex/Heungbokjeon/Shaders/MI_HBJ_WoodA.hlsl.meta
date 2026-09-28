@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: ba8a480a6dc13994ea64614031631217
+ShaderIncludeImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 304784
+  packageName: KHS-heungbokjeon, Gyeongbokgung
+  packageVersion: 1.0
+  assetPath: Assets/HeungbokjeonComplex/Heungbokjeon/Shaders/MI_HBJ_WoodA.hlsl
+  uploadId: 715607

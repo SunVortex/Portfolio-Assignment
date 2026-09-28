@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 7233c4200a5731a43a30f9723a60fe9a
+ShaderIncludeImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 304784
+  packageName: KHS-heungbokjeon, Gyeongbokgung
+  packageVersion: 1.0
+  assetPath: Assets/HeungbokjeonComplex/Heungbokjeon/Shaders/MI_HBJ_Gable.hlsl
+  uploadId: 715607

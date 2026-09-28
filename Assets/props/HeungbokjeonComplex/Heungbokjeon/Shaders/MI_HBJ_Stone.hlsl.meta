@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: aba384750905a7043a07f8ccce84c0c5
+ShaderIncludeImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 304784
+  packageName: KHS-heungbokjeon, Gyeongbokgung
+  packageVersion: 1.0
+  assetPath: Assets/HeungbokjeonComplex/Heungbokjeon/Shaders/MI_HBJ_Stone.hlsl
+  uploadId: 715607

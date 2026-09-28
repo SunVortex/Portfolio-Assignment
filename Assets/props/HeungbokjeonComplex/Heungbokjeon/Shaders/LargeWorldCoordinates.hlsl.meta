@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 150ec8c433d810846961c48459c57a2d
+ShaderIncludeImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 304784
+  packageName: KHS-heungbokjeon, Gyeongbokgung
+  packageVersion: 1.0
+  assetPath: Assets/HeungbokjeonComplex/Heungbokjeon/Shaders/LargeWorldCoordinates.hlsl
+  uploadId: 715607

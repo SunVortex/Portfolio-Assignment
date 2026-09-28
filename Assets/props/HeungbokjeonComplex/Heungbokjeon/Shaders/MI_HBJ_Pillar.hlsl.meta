@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 4cd528a6c796041448c660dc9e1f739a
+ShaderIncludeImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 304784
+  packageName: KHS-heungbokjeon, Gyeongbokgung
+  packageVersion: 1.0
+  assetPath: Assets/HeungbokjeonComplex/Heungbokjeon/Shaders/MI_HBJ_Pillar.hlsl
+  uploadId: 715607

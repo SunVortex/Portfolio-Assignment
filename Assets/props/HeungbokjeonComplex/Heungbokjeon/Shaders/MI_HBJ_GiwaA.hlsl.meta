@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 8c7c9be5055b05d4ebd4892994a4ddc3
+ShaderIncludeImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 304784
+  packageName: KHS-heungbokjeon, Gyeongbokgung
+  packageVersion: 1.0
+  assetPath: Assets/HeungbokjeonComplex/Heungbokjeon/Shaders/MI_HBJ_GiwaA.hlsl
+  uploadId: 715607
